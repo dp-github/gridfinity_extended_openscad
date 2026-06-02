@@ -154,6 +154,15 @@ default_wallcutout_horizontal_angle=70;
 default_wallcutout_horizontal_height=0;
 default_wallcutout_horizontal_corner_radius=5;
 
+/* [Cutout] */
+default_svg_cutout_filename = "";
+default_svg_cutout_scale = [1, 1];
+default_svg_cutout_crop_distance = 0;
+default_svg_cutout_offset = 2;
+default_svg_cutout_loc = [0, 0, 0];
+default_svg_cutout_extrude_height = 20;
+default_svg_cutout_operation = "negative";
+
 /* [Wall Placard] */
 default_wallplacard_style ="disabled";
 default_wallplacard_walls=[1,0,0,0];
@@ -318,6 +327,14 @@ module gridfinity_cup(
     patternVoronoiNoise = default_wallpattern_pattern_voronoi_noise,
     patternBrickWeight = default_wallpattern_pattern_brick_weight,
     patternFs = default_wallpattern_pattern_quality), 
+  svg_cutout_settings = SvgCutoutSettings(
+    filename = default_svg_cutout_filename,
+    scale = default_svg_cutout_scale,
+    cropDistance = default_svg_cutout_crop_distance,
+    offsetDistance = default_svg_cutout_offset,
+    loc = default_svg_cutout_loc,
+    extrudeHeight = default_svg_cutout_extrude_height,
+    operation = default_svg_cutout_operation),
   wallcutout_vertical_settings=WallCutoutSettings(
     type = default_wallcutout_vertical, 
     position = default_wallcutout_vertical_position, 
@@ -375,6 +392,7 @@ module gridfinity_cup(
   cupBase_settings = ValidateCupBaseSettings(cupBase_settings);
   floor_pattern_settings = ValidatePatternSettings(floor_pattern_settings);
   wall_pattern_settings = ValidatePatternSettings(wall_pattern_settings);
+  svg_cutout_settings = ValidateSvgCutoutSettings(svg_cutout_settings);
   slidingLidSettings = ValidateSlidingLidSettings(sliding_lid_settings, wall_thickness);
   
   headroom = headroom + (slidingLidSettings[iSlidingLid_Enabled] ? slidingLidSettings[iSlidingLid_Thickness] : 0);
@@ -526,6 +544,16 @@ module gridfinity_cup(
             sepFloorHeight = sepFloorHeight,
             fudgeFactor = fudgeFactor,
             cutoutclearance_divider = cutoutclearance_divider);
+
+          svg_cutout(
+            num_x = num_x,
+            num_y = num_y,
+            wall_thickness = wall_thickness,
+            floorHeight = floorHeight,
+            svg_cutout_settings = svg_cutout_settings,
+            calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+            calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
+            operation = SvgCutoutOperation_negative);
     
         bin_wall_pattern(
             num_x = num_x,
@@ -627,6 +655,26 @@ module gridfinity_cup(
       floor_thickness = floor_thickness,
       wall_thickness = wall_thickness,
       headroom = headroom);
+
+    svg_cutout(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      floorHeight = floorHeight,
+      svg_cutout_settings = svg_cutout_settings,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
+      operation = SvgCutoutOperation_positive);
+
+    svg_cutout(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      floorHeight = floorHeight,
+      svg_cutout_settings = svg_cutout_settings,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
+      operation = SvgCutoutOperation_none);
     
     
     if (lip_settings[iLipStyle] == "reduced_double") {
@@ -684,6 +732,7 @@ module gridfinity_cup(
     ,"wallpattern_walls",wallpattern_walls
     ,"wall_pattern_settings",wall_pattern_settings
     ,"floor_pattern_settings",floor_pattern_settings
+    ,"svg_cutout_settings",svg_cutout_settings
     ,"wallcutout_vertical_settings",wallcutout_vertical_settings
     ,"wallcutout_horizontal_settings",wallcutout_horizontal_settings
     ,"extendable_Settings",extendable_Settings
@@ -1137,6 +1186,69 @@ module bin_placards(
   }
 }
 
+iSvgCutout_Filename = 0;
+iSvgCutout_Scale = 1;
+iSvgCutout_CropDistance = 2;
+iSvgCutout_OffsetDistance = 3;
+iSvgCutout_Loc = 4;
+iSvgCutout_ExtrudeHeight = 5;
+iSvgCutout_Operation = 6;
+
+SvgCutoutOperation_none = "none";
+SvgCutoutOperation_positive = "positive";
+SvgCutoutOperation_negative = "negative";
+SvgCutoutOperation_values = [
+  SvgCutoutOperation_none,
+  SvgCutoutOperation_positive,
+  SvgCutoutOperation_negative
+];
+
+function ValidateSvgCutoutOperation(value) =
+  assert(list_contains(SvgCutoutOperation_values, value), typeerror("SvgCutoutOperation", value))
+  value;
+
+function SvgCutoutSettings(
+  filename = "",
+  scale = [1, 1],
+  cropDistance = 0,
+  offsetDistance = 2,
+  loc = [0, 0, 0],
+  extrudeHeight = 20,
+  operation = SvgCutoutOperation_negative) =
+  ValidateSvgCutoutSettings([
+    filename,
+    is_num(scale) ? [scale, scale] : scale,
+    cropDistance,
+    offsetDistance,
+    loc,
+    extrudeHeight,
+    operation
+  ]);
+
+function ValidateSvgCutoutSettings(settings) =
+  assert(is_list(settings) && len(settings) == 7, "SvgCutoutSettings must be a list of length 7")
+  assert(is_string(settings[iSvgCutout_Filename]), "SvgCutoutSettings filename must be a string")
+  assert(is_list(settings[iSvgCutout_Scale]) && len(settings[iSvgCutout_Scale]) == 2, "SvgCutoutSettings scale must be a list of length 2")
+  assert(is_num(settings[iSvgCutout_Scale].x), "SvgCutoutSettings X scale must be a number")
+  assert(is_num(settings[iSvgCutout_Scale].y), "SvgCutoutSettings Y scale must be a number")
+  assert(is_num(settings[iSvgCutout_CropDistance]), "SvgCutoutSettings crop distance must be a number")
+  assert(is_num(settings[iSvgCutout_OffsetDistance]), "SvgCutoutSettings offset distance must be a number")
+  assert(is_list(settings[iSvgCutout_Loc]) && len(settings[iSvgCutout_Loc]) == 3, "SvgCutoutSettings loc must be a list of length 3")
+  assert(is_num(settings[iSvgCutout_Loc].x), "SvgCutoutSettings X loc must be a number")
+  assert(is_num(settings[iSvgCutout_Loc].y), "SvgCutoutSettings Y loc must be a number")
+  assert(is_num(settings[iSvgCutout_Loc].z), "SvgCutoutSettings Z loc must be a number")
+  assert(is_num(settings[iSvgCutout_ExtrudeHeight]) && settings[iSvgCutout_ExtrudeHeight] > 0, "SvgCutoutSettings extrude height must be a positive number")
+  assert(is_string(settings[iSvgCutout_Operation]), "SvgCutoutSettings operation must be a string")
+  [
+    settings[iSvgCutout_Filename],
+    settings[iSvgCutout_Scale],
+    settings[iSvgCutout_CropDistance],
+    settings[iSvgCutout_OffsetDistance],
+    settings[iSvgCutout_Loc],
+    settings[iSvgCutout_ExtrudeHeight],
+    ValidateSvgCutoutOperation(settings[iSvgCutout_Operation])
+  ];
+
 function _separator_bottom_thickness(sepCfg) =
   let(thickness = sepCfg[iSeparatorWallThickness])
   is_list(thickness) ? thickness[0] : thickness;
@@ -1152,6 +1264,26 @@ function _chamber_spans_from_separators(separators, inner_span, idx = 0, start =
         next_start = max(0, min(inner_span, separator_center + half_thickness))
       )
       concat([[start, chamber_end]], _chamber_spans_from_separators(separators, inner_span, idx + 1, next_start));
+
+function _first_chamber_center(
+  num_x,
+  num_y,
+  wall_thickness,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions) =
+  let(
+    inner_x = num_x * env_pitch().x - env_clearance().x - wall_thickness * 2,
+    inner_y = num_y * env_pitch().y - env_clearance().y - wall_thickness * 2,
+    x_offset = wall_thickness + env_clearance().x / 2,
+    y_offset = wall_thickness + env_clearance().y / 2,
+    x_spans = _chamber_spans_from_separators(calculated_vertical_separator_positions, inner_x),
+    y_spans = _chamber_spans_from_separators(calculated_horizontal_separator_positions, inner_y),
+    x_span = x_spans[0],
+    y_span = y_spans[0])
+  [
+    x_offset + (x_span[0] + x_span[1]) / 2,
+    y_offset + (y_span[0] + y_span[1]) / 2
+  ];
 
 function _is_valid_floor_thickness_value(v) = is_num(v) && v == v;
 
@@ -1211,6 +1343,56 @@ module subdivision_floor_depth_overrides(
         }
       }
     }
+  }
+}
+
+module svg_cutout_2d(svg_cutout_settings) {
+  crop_distance = svg_cutout_settings[iSvgCutout_CropDistance];
+  crop_size = 10000;
+
+  difference() {
+    offset(delta = svg_cutout_settings[iSvgCutout_OffsetDistance])
+      scale(svg_cutout_settings[iSvgCutout_Scale])
+        import(file = svg_cutout_settings[iSvgCutout_Filename]);
+
+    if (crop_distance > 0)
+      translate([-crop_size, -crop_size / 2])
+        square([crop_size + crop_distance, crop_size]);
+  }
+}
+
+module svg_cutout(
+  num_x,
+  num_y,
+  wall_thickness,
+  floorHeight,
+  svg_cutout_settings,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions,
+  operation) {
+
+  filename = svg_cutout_settings[iSvgCutout_Filename];
+  selected_operation = svg_cutout_settings[iSvgCutout_Operation];
+
+  if (filename != "" && selected_operation == operation) {
+    loc = svg_cutout_settings[iSvgCutout_Loc];
+    first_chamber_center = _first_chamber_center(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
+    x_loc = loc.x == 0 ? first_chamber_center.x : loc.x;
+    y_loc = loc.y == 0 ? first_chamber_center.y : loc.y;
+    z_loc = loc.z == 0 ? floorHeight : loc.z;
+    extrude_height = selected_operation == SvgCutoutOperation_none
+      ? fudgeFactor
+      : svg_cutout_settings[iSvgCutout_ExtrudeHeight] + fudgeFactor * 2;
+
+    color(env_colour(color_wallcutout))
+    translate([x_loc, y_loc, z_loc - extrude_height + fudgeFactor])
+    linear_extrude(height = extrude_height)
+      svg_cutout_2d(svg_cutout_settings);
   }
 }
 

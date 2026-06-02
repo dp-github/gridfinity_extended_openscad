@@ -231,6 +231,28 @@ floorpattern_pattern_brick_weight = 5;
 //$fs for floor pattern, min size face.
 floorpattern_pattern_quality = 0.4;//0.1:0.1:2
 
+/* [Cutout] */
+// SVG filename to subtract from the model. Empty disables SVG cutout.
+svg_cutout_filename = "";
+// X scale factor for the imported SVG.
+svg_cutout_x_scale = 1.0; //0.001
+// Y scale factor for the imported SVG.
+svg_cutout_y_scale = 1.0; //0.001
+// Distance to crop from the left side of the imported SVG after scaling.
+svg_cutout_crop_distance = 0; //0.1
+// Offset the imported SVG shape in X/Y before extrusion.
+svg_cutout_offset = 2; //0.1
+// X location. 0 uses the center of the left chamber.
+svg_cutout_x_loc = 0; //0.1
+// Y location. 0 uses the center of the left chamber.
+svg_cutout_y_loc = 0; //0.1
+// Z location. 0 uses the floor height of the left chamber.
+svg_cutout_z_loc = 0; //0.1
+// Extrude height for the imported SVG cutout.
+svg_cutout_extrude_height = 20; //0.1
+// SVG extrusion mode.
+svg_cutout_operation = "negative"; //[none, positive, negative]
+
 /* [Wall Cutout] */
 wallcutout_vertical ="disabled"; //[disabled, enabled, inneronly, wallsonly, frontonly, backonly]
 // wallcoutout position -0.5: disabled; Positive: GF units; Negative: ratio length/abs(value)
@@ -434,6 +456,14 @@ gridfinity_cup(
     patternVoronoiNoise = floorpattern_pattern_voronoi_noise,
     patternBrickWeight = floorpattern_pattern_brick_weight,
     patternFs = floorpattern_pattern_quality),
+  svg_cutout_settings = SvgCutoutSettings(
+    filename = svg_cutout_filename,
+    scale = [svg_cutout_x_scale, svg_cutout_y_scale],
+    cropDistance = svg_cutout_crop_distance,
+    offsetDistance = svg_cutout_offset,
+    loc = [svg_cutout_x_loc, svg_cutout_y_loc, svg_cutout_z_loc],
+    extrudeHeight = svg_cutout_extrude_height,
+    operation = svg_cutout_operation),
   wallcutout_vertical_settings = WallCutoutSettings(
     type = wallcutout_vertical,
     position = wallcutout_vertical_position,
