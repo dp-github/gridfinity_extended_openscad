@@ -100,6 +100,10 @@ floor_thickness = 0.7;
 cavity_floor_radius = -1;// .1
 // Efficient floor option saves material and time, but the internal floor is not flat
 efficient_floor = "off";//[off,on,rounded,smooth]
+// Enable per-subdivision floor thickness from the config string
+irregular_subdivision_floor_thickness = false;
+// Pipe-separated floor thicknesses in mm, one value per subdivision in index order
+subdivision_floor_thicknesses = "1.2|1.2|1.2";
 // AKA half pitch. Enable to subdivide bottom pads to allow sub-cell offsets
 sub_pitch = 1; //[1:"disabled",2:"half pitch",3:"third pitch",4:"quarter pitch"]
 // Removes the internal grid from base the shape
@@ -308,6 +312,8 @@ $fa = fa;
 $fs = fs;
 $fn = fn;
 
+effective_floor_thickness = irregular_subdivision_floor_thickness ? gf_cup_floor_thickness : floor_thickness;
+
 set_environment(
   width = width,
   depth = depth,
@@ -347,7 +353,7 @@ gridfinity_cup(
     screwSize = enable_screws?screw_size:[0,0],
     holeOverhangRemedy = hole_overhang_remedy,
     cornerAttachmentsOnly = box_corner_attachments_only,
-    floorThickness = floor_thickness,
+    floorThickness = effective_floor_thickness,
     cavityFloorRadius = cavity_floor_radius,
     efficientFloor=efficient_floor,
     subPitch=sub_pitch,
@@ -356,7 +362,9 @@ gridfinity_cup(
     minimumPrintablePadSize=minimum_printable_pad_size,
     flatBaseRoundedRadius = flat_base_rounded_radius,
     flatBaseRoundedEasyPrint = flat_base_rounded_easyPrint,
-    alignGrid = [align_grid_x, align_grid_y]
+    alignGrid = [align_grid_x, align_grid_y],
+    irregularSubdivisionFloorThickness = irregular_subdivision_floor_thickness,
+    subdivisionFloorThicknesses = subdivision_floor_thicknesses,
     ),
   wall_thickness=wall_thickness,
   vertical_chambers = ChamberSettings(

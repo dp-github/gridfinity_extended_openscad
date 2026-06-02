@@ -118,6 +118,8 @@ default_cavity_floor_radius = -1;
 default_hole_overhang_remedy = 2;
 // Save material with thinner floor
 default_efficient_floor = "off";//["off","on","rounded","smooth"] 
+default_irregular_subdivision_floor_thickness = false;
+default_subdivision_floor_thicknesses = "";
 // Remove floor to create a spacer
 default_spacer = false;
 // Half-pitch base pads for offset stacking
@@ -254,6 +256,8 @@ module gridfinity_cup(
     floorThickness = default_floor_thickness,
     cavityFloorRadius = default_cavity_floor_radius,
     efficientFloor=default_efficient_floor,
+    irregularSubdivisionFloorThickness = default_irregular_subdivision_floor_thickness,
+    subdivisionFloorThicknesses = default_subdivision_floor_thicknesses,
     subPitch=default_sub_pitch,
     flatBase=default_flat_base,
     spacer=default_spacer),
@@ -1133,6 +1137,83 @@ module bin_placards(
   }
 }
 
+function _separator_bottom_thickness(sepCfg) =
+  let(thickness = sepCfg[iSeparatorWallThickness])
+  is_list(thickness) ? thickness[0] : thickness;
+
+function _chamber_spans_from_separators(separators, inner_span, idx = 0, start = 0) =
+  (len(separators) == 0 || idx >= len(separators))
+    ? [[start, inner_span]]
+    : let(
+        separator = separators[idx],
+        half_thickness = _separator_bottom_thickness(separator) / 2,
+        separator_center = separator[iSeparatorPosition],
+        chamber_end = max(start, min(inner_span, separator_center - half_thickness)),
+        next_start = max(0, min(inner_span, separator_center + half_thickness))
+      )
+      concat([[start, chamber_end]], _chamber_spans_from_separators(separators, inner_span, idx + 1, next_start));
+
+function _is_valid_floor_thickness_value(v) = is_num(v) && v == v;
+
+function _parse_subdivision_floor_thicknesses(config) =
+  !is_string(config) || len(config) == 0
+    ? []
+    : [for (entry = split(config, "|")) float(entry)];
+
+function _subdivision_floor_thickness_for_index(
+  subdivision_index,
+  parsed_thicknesses,
+  fallback_thickness) =
+  subdivision_index >= len(parsed_thicknesses)
+    ? fallback_thickness
+    : parsed_thicknesses[subdivision_index];
+
+module subdivision_floor_depth_overrides(
+  num_x,
+  num_y,
+  wall_thickness,
+  floorht,
+  floor_thickness,
+  cupBase_settings,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions) {
+
+  inner_x = num_x * env_pitch().x - env_clearance().x - wall_thickness * 2;
+  inner_y = num_y * env_pitch().y - env_clearance().y - wall_thickness * 2;
+  x_offset = wall_thickness + env_clearance().x / 2;
+  y_offset = wall_thickness + env_clearance().y / 2;
+  x_spans = _chamber_spans_from_separators(calculated_vertical_separator_positions, inner_x);
+  y_spans = _chamber_spans_from_separators(calculated_horizontal_separator_positions, inner_y);
+  subdivision_floor_thicknesses = _parse_subdivision_floor_thicknesses(cupBase_settings[iCupBase_SubdivisionFloorThicknesses]);
+  contains_zero = len([for (v = subdivision_floor_thicknesses) if (v == 0) 1]) > 0;
+  parse_invalid = len(subdivision_floor_thicknesses) > 0
+    && len([for (v = subdivision_floor_thicknesses) if (!_is_valid_floor_thickness_value(v)) 1]) > 0;
+  use_irregular = cupBase_settings[iCupBase_IrregularSubdivisionFloorThickness] && !contains_zero && !parse_invalid;
+
+  if (use_irregular) {
+    for (y_idx = [0:len(y_spans)-1]) {
+      for (x_idx = [0:len(x_spans)-1]) {
+        x_span = x_spans[x_idx];
+        y_span = y_spans[y_idx];
+        x_len = x_span[1] - x_span[0];
+        y_len = y_span[1] - y_span[0];
+        subdivision_number = y_idx * len(x_spans) + x_idx;
+        subdivision_floor_thickness = _subdivision_floor_thickness_for_index(
+          subdivision_index = subdivision_number,
+          parsed_thicknesses = subdivision_floor_thicknesses,
+          fallback_thickness = floor_thickness);
+        target_floor = max(0, floorht + (subdivision_floor_thickness - floor_thickness));
+        override_height = target_floor - floorht;
+
+        if (x_len > 0 && y_len > 0 && override_height > 0) {
+          translate([x_offset + x_span[0], y_offset + y_span[0], floorht - fudgeFactor])
+            cube([x_len, y_len, override_height + fudgeFactor * 2]);
+        }
+      }
+    }
+  }
+}
+
 module partitioned_cavity(num_x, num_y, num_z, 
     label_settings=[],
     cupBase_settings=[],
@@ -1175,6 +1256,16 @@ module partitioned_cavity(num_x, num_y, num_z,
       sliding_lid_settings=sliding_lid_settings, 
       headroom=headroom);
     }
+
+    subdivision_floor_depth_overrides(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      floorht = floorHeight,
+      floor_thickness = floor_thickness,
+      cupBase_settings = cupBase_settings,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
     
     if(env_help_enabled("trace")) echo("partitioned_cavity", vertical_separator_positions=calculated_vertical_separator_positions);
 

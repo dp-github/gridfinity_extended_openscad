@@ -48,6 +48,8 @@ iCupBase_AlignGrid=17;
 iCupBase_MagnetSideAccess=18;
 iCupBase_MagnetCrushDepth=19;
 iCupBase_MagnetChamfer=20;
+iCupBase_IrregularSubdivisionFloorThickness=21;
+iCupBase_SubdivisionFloorThicknesses=22;
 
 iCylinderDimension_Diameter=0;
 iCylinderDimension_Height=1;
@@ -108,7 +110,9 @@ function CupBaseSettings(
     magnetCrushDepth = 0,
     magnetChamfer = 0,
     alignGrid = ["near", "near"],
-    magnetSideAccess = false
+    magnetSideAccess = false,
+    irregularSubdivisionFloorThickness = false,
+    subdivisionFloorThicknesses = ""
     ) =
   let(
     magnetSize =
@@ -150,13 +154,15 @@ function CupBaseSettings(
       alignGrid,
       validateMagnetSideAccess(magnetSideAccess),
       magnetCrushDepth,
-      magnetChamfer
+      magnetChamfer,
+      irregularSubdivisionFloorThickness,
+      subdivisionFloorThicknesses
       ],
     validatedResult = ValidateCupBaseSettings(result)
   ) validatedResult;
 
 function ValidateCupBaseSettings(settings, num_x, num_y) =
-  assert(is_list(settings) && len(settings) == 21, typeerror_list("CupBase Settings", settings, 19))
+  assert(is_list(settings) && len(settings) == 23, typeerror_list("CupBase Settings", settings, 23))
   assert(is_list(settings[iCupBase_MagnetSize]) && len(settings[iCupBase_MagnetSize])==2, "CupBase Magnet Setting must be a list of length 2")
   assert(is_list(settings[iCupBase_CenterMagnetSize]) && len(settings[iCupBase_CenterMagnetSize])==2, "CenterMagnet Magnet Setting must be a list of length 2")
   assert(is_list(settings[iCupBase_ScrewSize]) && len(settings[iCupBase_ScrewSize])==2, "ScrewSize Magnet Setting must be a list of length 2")
@@ -171,6 +177,8 @@ function ValidateCupBaseSettings(settings, num_x, num_y) =
   assert(is_num(settings[iCupBase_MagnetCaptiveHeight]), "CupBase Magnet Captive height setting must a number")
   assert(is_list(settings[iCupBase_AlignGrid]) && len(settings[iCupBase_AlignGrid])==2, "CupBase AlignGrid Setting must be a list of length 2")
   assert(is_string(settings[iCupBase_MagnetSideAccess]), "CupBase MagnetSideAccess Settings must be a string")
+  assert(is_bool(settings[iCupBase_IrregularSubdivisionFloorThickness]), "CupBase irregularSubdivisionFloorThickness must be a boolean")
+  assert(is_string(settings[iCupBase_SubdivisionFloorThicknesses]), "CupBase subdivisionFloorThicknesses must be a string")
   [
       settings[iCupBase_MagnetSize],
       validateMagnetEasyRelease(settings[iCupBase_MagnetEasyRelease]),
@@ -192,5 +200,7 @@ function ValidateCupBaseSettings(settings, num_x, num_y) =
       settings[iCupBase_AlignGrid],
       settings[iCupBase_MagnetSideAccess],
       settings[iCupBase_MagnetCrushDepth],
-      settings[iCupBase_MagnetChamfer]
+      settings[iCupBase_MagnetChamfer],
+      settings[iCupBase_IrregularSubdivisionFloorThickness],
+      settings[iCupBase_SubdivisionFloorThicknesses]
       ];
