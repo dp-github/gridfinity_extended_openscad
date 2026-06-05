@@ -259,9 +259,11 @@ finger_holes = 0; //[0:1:2]
 // X offset of finger hole center from the cutout subdivision center.
 finger_hole_x_offset = 10; //1
 // Adjustment added to the finger hole centerline X position.
-finger_hole_centerline_adjustment = 0; //0.1
+finger_hole_centerline = 0; //0.1
 // Y offset/depth of finger hole center from the bottom of the cup.
-finger_hole_y_depth = 0; //1
+finger_hole_y_pos = 0; //1
+// Depth of each finger hole.
+finger_hole_depth = 10; //0.1
 // Radius of each finger hole.
 finger_hole_radius = 5; //1
 
@@ -478,8 +480,9 @@ gridfinity_cup(
     floorHighlight = cutout_floor_highlight,
     fingerHoles = finger_holes,
     fingerHoleXOffset = finger_hole_x_offset,
-    fingerHoleCenterlineAdjustment = finger_hole_centerline_adjustment,
-    fingerHoleYDepth = finger_hole_y_depth,
+    fingerHoleCenterline = finger_hole_centerline,
+    fingerHoleYPos = finger_hole_y_pos,
+    fingerHoleDepth = finger_hole_depth,
     fingerHoleRadius = finger_hole_radius,
     operation = svg_cutout_operation),
   wallcutout_vertical_settings = WallCutoutSettings(

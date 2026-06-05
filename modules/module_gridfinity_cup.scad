@@ -164,7 +164,9 @@ default_svg_cutout_extrude_height = 20;
 default_svg_cutout_floor_highlight = false;
 default_svg_cutout_finger_holes = 0;
 default_svg_cutout_finger_hole_x_offset = 10;
-default_svg_cutout_finger_hole_y_depth = 0;
+default_svg_cutout_finger_hole_centerline = 0;
+default_svg_cutout_finger_hole_y_pos = 0;
+default_svg_cutout_finger_hole_depth = 10;
 default_svg_cutout_finger_hole_radius = 5;
 default_svg_cutout_operation = "negative";
 
@@ -342,7 +344,9 @@ module gridfinity_cup(
     floorHighlight = default_svg_cutout_floor_highlight,
     fingerHoles = default_svg_cutout_finger_holes,
     fingerHoleXOffset = default_svg_cutout_finger_hole_x_offset,
-    fingerHoleYDepth = default_svg_cutout_finger_hole_y_depth,
+    fingerHoleCenterline = default_svg_cutout_finger_hole_centerline,
+    fingerHoleYPos = default_svg_cutout_finger_hole_y_pos,
+    fingerHoleDepth = default_svg_cutout_finger_hole_depth,
     fingerHoleRadius = default_svg_cutout_finger_hole_radius,
     operation = default_svg_cutout_operation),
   wallcutout_vertical_settings=WallCutoutSettings(
@@ -1225,8 +1229,10 @@ iSvgCutout_Operation = 6;
 iSvgCutout_FloorHighlight = 7;
 iSvgCutout_FingerHoles = 8;
 iSvgCutout_FingerHoleXOffset = 9;
-iSvgCutout_FingerHoleYDepth = 10;
-iSvgCutout_FingerHoleRadius = 11;
+iSvgCutout_FingerHoleCenterline = 10;
+iSvgCutout_FingerHoleYPos = 11;
+iSvgCutout_FingerHoleDepth = 12;
+iSvgCutout_FingerHoleRadius = 13;
 
 SvgCutoutOperation_none = "none";
 SvgCutoutOperation_positive = "positive";
@@ -1252,7 +1258,9 @@ function SvgCutoutSettings(
   floorHighlight = false,
   fingerHoles = 0,
   fingerHoleXOffset = 10,
-  fingerHoleYDepth = 0,
+  fingerHoleCenterline = 0,
+  fingerHoleYPos = 0,
+  fingerHoleDepth = -1,
   fingerHoleRadius = 5) =
   ValidateSvgCutoutSettings([
     filename,
@@ -1265,12 +1273,17 @@ function SvgCutoutSettings(
     floorHighlight,
     fingerHoles,
     fingerHoleXOffset,
-    fingerHoleYDepth,
+    fingerHoleCenterline,
+    fingerHoleYPos,
+    fingerHoleDepth < 0 ? extrudeHeight / 2 : fingerHoleDepth,
     fingerHoleRadius
   ]);
 
 function ValidateSvgCutoutSettings(settings) =
-  assert(is_list(settings) && (len(settings) == 7 || len(settings) == 8 || len(settings) == 12), "SvgCutoutSettings must be a list of length 7, 8, or 12")
+  assert(is_list(settings) && (len(settings) == 7 || len(settings) == 8 || len(settings) == 12 || len(settings) == 13 || len(settings) == 14), "SvgCutoutSettings must be a list of length 7, 8, 12, 13, or 14")
+  let(
+    iFingerHoleYPos = len(settings) == 12 ? iSvgCutout_FingerHoleYPos - 1 : iSvgCutout_FingerHoleYPos,
+    iFingerHoleRadius = len(settings) == 12 ? iSvgCutout_FingerHoleRadius - 2 : len(settings) == 13 ? iSvgCutout_FingerHoleRadius - 1 : iSvgCutout_FingerHoleRadius)
   assert(is_string(settings[iSvgCutout_Filename]), "SvgCutoutSettings filename must be a string")
   assert(is_list(settings[iSvgCutout_Scale]) && len(settings[iSvgCutout_Scale]) == 2, "SvgCutoutSettings scale must be a list of length 2")
   assert(is_num(settings[iSvgCutout_Scale].x), "SvgCutoutSettings X scale must be a number")
@@ -1286,8 +1299,10 @@ function ValidateSvgCutoutSettings(settings) =
   assert(len(settings) == 7 || is_bool(settings[iSvgCutout_FloorHighlight]), "SvgCutoutSettings floor highlight must be a boolean")
   assert(len(settings) < 12 || (is_num(settings[iSvgCutout_FingerHoles]) && settings[iSvgCutout_FingerHoles] == floor(settings[iSvgCutout_FingerHoles]) && settings[iSvgCutout_FingerHoles] >= 0 && settings[iSvgCutout_FingerHoles] <= 2), "SvgCutoutSettings finger holes must be an integer from 0 to 2")
   assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleXOffset]), "SvgCutoutSettings finger hole X offset must be a number")
-  assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleYDepth]), "SvgCutoutSettings finger hole Y depth must be a number")
-  assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleRadius]), "SvgCutoutSettings finger hole radius must be a number")
+  assert(len(settings) < 13 || is_num(settings[iSvgCutout_FingerHoleCenterline]), "SvgCutoutSettings finger hole centerline must be a number")
+  assert(len(settings) < 12 || is_num(settings[iFingerHoleYPos]), "SvgCutoutSettings finger hole Y pos must be a number")
+  assert(len(settings) < 14 || (is_num(settings[iSvgCutout_FingerHoleDepth]) && settings[iSvgCutout_FingerHoleDepth] >= 0), "SvgCutoutSettings finger hole depth must be a non-negative number")
+  assert(len(settings) < 12 || is_num(settings[iFingerHoleRadius]), "SvgCutoutSettings finger hole radius must be a number")
   [
     settings[iSvgCutout_Filename],
     settings[iSvgCutout_Scale],
@@ -1299,8 +1314,10 @@ function ValidateSvgCutoutSettings(settings) =
     len(settings) == 7 ? false : settings[iSvgCutout_FloorHighlight],
     len(settings) < 12 ? 0 : settings[iSvgCutout_FingerHoles],
     len(settings) < 12 ? 10 : settings[iSvgCutout_FingerHoleXOffset],
-    len(settings) < 12 ? 0 : settings[iSvgCutout_FingerHoleYDepth],
-    len(settings) < 12 ? 5 : settings[iSvgCutout_FingerHoleRadius]
+    len(settings) < 13 ? 0 : settings[iSvgCutout_FingerHoleCenterline],
+    len(settings) < 12 ? 0 : settings[iFingerHoleYPos],
+    len(settings) < 14 ? settings[iSvgCutout_ExtrudeHeight] / 2 : settings[iSvgCutout_FingerHoleDepth],
+    len(settings) < 12 ? 5 : settings[iFingerHoleRadius]
   ];
 
 function _separator_bottom_thickness(sepCfg) =
@@ -1453,16 +1470,34 @@ module svg_cutout_2d(svg_cutout_settings) {
 module svg_cutout_finger_holes_2d(svg_cutout_settings, x_loc, y_loc) {
   finger_holes = svg_cutout_settings[iSvgCutout_FingerHoles];
   x_offset = svg_cutout_settings[iSvgCutout_FingerHoleXOffset];
-  y_depth = svg_cutout_settings[iSvgCutout_FingerHoleYDepth];
+  centerline = svg_cutout_settings[iSvgCutout_FingerHoleCenterline];
+  y_pos = svg_cutout_settings[iSvgCutout_FingerHoleYPos];
   radius = svg_cutout_settings[iSvgCutout_FingerHoleRadius];
 
   if (finger_holes > 0 && radius > 0) {
-    translate([x_loc - x_offset, y_loc + y_depth])
+    translate([x_loc + centerline - x_offset, y_loc + y_pos])
       circle(r = radius);
 
     if (finger_holes == 2)
-      translate([x_loc + x_offset, y_loc + y_depth])
+      translate([x_loc + centerline + x_offset, y_loc + y_pos])
         circle(r = radius);
+  }
+}
+
+module svg_cutout_finger_hole_spheres(svg_cutout_settings, x_loc, y_loc, z_loc) {
+  finger_holes = svg_cutout_settings[iSvgCutout_FingerHoles];
+  x_offset = svg_cutout_settings[iSvgCutout_FingerHoleXOffset];
+  centerline = svg_cutout_settings[iSvgCutout_FingerHoleCenterline];
+  y_pos = svg_cutout_settings[iSvgCutout_FingerHoleYPos];
+  radius = svg_cutout_settings[iSvgCutout_FingerHoleRadius];
+
+  if (finger_holes > 0 && radius > 0) {
+    translate([x_loc + centerline - x_offset, y_loc + y_pos, z_loc])
+      sphere(r = radius);
+
+    if (finger_holes == 2)
+      translate([x_loc + centerline + x_offset, y_loc + y_pos, z_loc])
+        sphere(r = radius);
   }
 }
 
@@ -1547,8 +1582,9 @@ module svg_cutout_finger_holes(
   selected_operation = svg_cutout_settings[iSvgCutout_Operation];
   finger_holes = svg_cutout_settings[iSvgCutout_FingerHoles];
   radius = svg_cutout_settings[iSvgCutout_FingerHoleRadius];
+  hole_depth = svg_cutout_settings[iSvgCutout_FingerHoleDepth];
 
-  if (filename != "" && selected_operation == SvgCutoutOperation_negative && finger_holes > 0 && radius > 0) {
+  if (filename != "" && selected_operation == SvgCutoutOperation_negative && finger_holes > 0 && radius > 0 && hole_depth > 0) {
     first_chamber_reference = _first_chamber_reference(
       num_x = num_x,
       num_y = num_y,
@@ -1559,12 +1595,21 @@ module svg_cutout_finger_holes(
       subdivision_index = 0,
       floorht = floorHeight,
       cupBase_settings = cupBase_settings);
-    hole_depth = svg_cutout_settings[iSvgCutout_ExtrudeHeight] / 2;
+    cylinder_depth = max(0, hole_depth - radius);
+    sphere_center_z = subdivision_floor_z - cylinder_depth;
 
     color(env_colour(color_wallcutout))
-    translate([0, 0, subdivision_floor_z - hole_depth - fudgeFactor])
-    linear_extrude(height = hole_depth + fudgeFactor * 2)
-      svg_cutout_finger_holes_2d(svg_cutout_settings, first_chamber_reference.x, first_chamber_reference[2]);
+    union() {
+      translate([0, 0, subdivision_floor_z - cylinder_depth - fudgeFactor])
+      linear_extrude(height = cylinder_depth + fudgeFactor * 2)
+        svg_cutout_finger_holes_2d(svg_cutout_settings, first_chamber_reference.x, first_chamber_reference[2]);
+
+      svg_cutout_finger_hole_spheres(
+        svg_cutout_settings,
+        first_chamber_reference.x,
+        first_chamber_reference[2],
+        sphere_center_z);
+    }
   }
 }
 
