@@ -162,6 +162,10 @@ default_svg_cutout_offset = 2;
 default_svg_cutout_loc = [0, 0, 0];
 default_svg_cutout_extrude_height = 20;
 default_svg_cutout_floor_highlight = false;
+default_svg_cutout_finger_holes = 0;
+default_svg_cutout_finger_hole_x_offset = 10;
+default_svg_cutout_finger_hole_y_depth = 0;
+default_svg_cutout_finger_hole_radius = 5;
 default_svg_cutout_operation = "negative";
 
 /* [Wall Placard] */
@@ -336,6 +340,10 @@ module gridfinity_cup(
     loc = default_svg_cutout_loc,
     extrudeHeight = default_svg_cutout_extrude_height,
     floorHighlight = default_svg_cutout_floor_highlight,
+    fingerHoles = default_svg_cutout_finger_holes,
+    fingerHoleXOffset = default_svg_cutout_finger_hole_x_offset,
+    fingerHoleYDepth = default_svg_cutout_finger_hole_y_depth,
+    fingerHoleRadius = default_svg_cutout_finger_hole_radius,
     operation = default_svg_cutout_operation),
   wallcutout_vertical_settings=WallCutoutSettings(
     type = default_wallcutout_vertical, 
@@ -556,6 +564,16 @@ module gridfinity_cup(
             calculated_vertical_separator_positions = calculated_vertical_separator_positions,
             calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
             operation = SvgCutoutOperation_negative);
+
+          svg_cutout_finger_holes(
+            num_x = num_x,
+            num_y = num_y,
+            wall_thickness = wall_thickness,
+            floorHeight = floorHeight,
+            cupBase_settings = cupBase_settings,
+            svg_cutout_settings = svg_cutout_settings,
+            calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+            calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
     
         bin_wall_pattern(
             num_x = num_x,
@@ -1205,6 +1223,10 @@ iSvgCutout_Loc = 4;
 iSvgCutout_ExtrudeHeight = 5;
 iSvgCutout_Operation = 6;
 iSvgCutout_FloorHighlight = 7;
+iSvgCutout_FingerHoles = 8;
+iSvgCutout_FingerHoleXOffset = 9;
+iSvgCutout_FingerHoleYDepth = 10;
+iSvgCutout_FingerHoleRadius = 11;
 
 SvgCutoutOperation_none = "none";
 SvgCutoutOperation_positive = "positive";
@@ -1227,7 +1249,11 @@ function SvgCutoutSettings(
   loc = [0, 0, 0],
   extrudeHeight = 20,
   operation = SvgCutoutOperation_negative,
-  floorHighlight = false) =
+  floorHighlight = false,
+  fingerHoles = 0,
+  fingerHoleXOffset = 10,
+  fingerHoleYDepth = 0,
+  fingerHoleRadius = 5) =
   ValidateSvgCutoutSettings([
     filename,
     is_num(scale) ? [scale, scale] : scale,
@@ -1236,11 +1262,15 @@ function SvgCutoutSettings(
     loc,
     extrudeHeight,
     operation,
-    floorHighlight
+    floorHighlight,
+    fingerHoles,
+    fingerHoleXOffset,
+    fingerHoleYDepth,
+    fingerHoleRadius
   ]);
 
 function ValidateSvgCutoutSettings(settings) =
-  assert(is_list(settings) && (len(settings) == 7 || len(settings) == 8), "SvgCutoutSettings must be a list of length 7 or 8")
+  assert(is_list(settings) && (len(settings) == 7 || len(settings) == 8 || len(settings) == 12), "SvgCutoutSettings must be a list of length 7, 8, or 12")
   assert(is_string(settings[iSvgCutout_Filename]), "SvgCutoutSettings filename must be a string")
   assert(is_list(settings[iSvgCutout_Scale]) && len(settings[iSvgCutout_Scale]) == 2, "SvgCutoutSettings scale must be a list of length 2")
   assert(is_num(settings[iSvgCutout_Scale].x), "SvgCutoutSettings X scale must be a number")
@@ -1254,6 +1284,10 @@ function ValidateSvgCutoutSettings(settings) =
   assert(is_num(settings[iSvgCutout_ExtrudeHeight]) && settings[iSvgCutout_ExtrudeHeight] > 0, "SvgCutoutSettings extrude height must be a positive number")
   assert(is_string(settings[iSvgCutout_Operation]), "SvgCutoutSettings operation must be a string")
   assert(len(settings) == 7 || is_bool(settings[iSvgCutout_FloorHighlight]), "SvgCutoutSettings floor highlight must be a boolean")
+  assert(len(settings) < 12 || (is_num(settings[iSvgCutout_FingerHoles]) && settings[iSvgCutout_FingerHoles] == floor(settings[iSvgCutout_FingerHoles]) && settings[iSvgCutout_FingerHoles] >= 0 && settings[iSvgCutout_FingerHoles] <= 2), "SvgCutoutSettings finger holes must be an integer from 0 to 2")
+  assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleXOffset]), "SvgCutoutSettings finger hole X offset must be a number")
+  assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleYDepth]), "SvgCutoutSettings finger hole Y depth must be a number")
+  assert(len(settings) < 12 || is_num(settings[iSvgCutout_FingerHoleRadius]), "SvgCutoutSettings finger hole radius must be a number")
   [
     settings[iSvgCutout_Filename],
     settings[iSvgCutout_Scale],
@@ -1262,7 +1296,11 @@ function ValidateSvgCutoutSettings(settings) =
     settings[iSvgCutout_Loc],
     settings[iSvgCutout_ExtrudeHeight],
     ValidateSvgCutoutOperation(settings[iSvgCutout_Operation]),
-    len(settings) == 7 ? false : settings[iSvgCutout_FloorHighlight]
+    len(settings) == 7 ? false : settings[iSvgCutout_FloorHighlight],
+    len(settings) < 12 ? 0 : settings[iSvgCutout_FingerHoles],
+    len(settings) < 12 ? 10 : settings[iSvgCutout_FingerHoleXOffset],
+    len(settings) < 12 ? 0 : settings[iSvgCutout_FingerHoleYDepth],
+    len(settings) < 12 ? 5 : settings[iSvgCutout_FingerHoleRadius]
   ];
 
 function _separator_bottom_thickness(sepCfg) =
@@ -1281,7 +1319,7 @@ function _chamber_spans_from_separators(separators, inner_span, idx = 0, start =
       )
       concat([[start, chamber_end]], _chamber_spans_from_separators(separators, inner_span, idx + 1, next_start));
 
-function _first_chamber_center(
+function _first_chamber_reference(
   num_x,
   num_y,
   wall_thickness,
@@ -1298,8 +1336,23 @@ function _first_chamber_center(
     y_span = y_spans[0])
   [
     x_offset + (x_span[0] + x_span[1]) / 2,
-    y_offset + (y_span[0] + y_span[1]) / 2
+    y_offset + (y_span[0] + y_span[1]) / 2,
+    y_offset + y_span[0]
   ];
+
+function _first_chamber_center(
+  num_x,
+  num_y,
+  wall_thickness,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions) =
+  let(chamber_reference = _first_chamber_reference(
+    num_x = num_x,
+    num_y = num_y,
+    wall_thickness = wall_thickness,
+    calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+    calculated_horizontal_separator_positions = calculated_horizontal_separator_positions))
+  [chamber_reference.x, chamber_reference.y];
 
 function _is_valid_floor_thickness_value(v) = is_num(v) && v == v;
 
@@ -1315,6 +1368,29 @@ function _subdivision_floor_thickness_for_index(
   subdivision_index >= len(parsed_thicknesses)
     ? fallback_thickness
     : parsed_thicknesses[subdivision_index];
+
+function _use_subdivision_floor_depth_overrides(cupBase_settings) =
+  let(
+    subdivision_floor_thicknesses = _parse_subdivision_floor_thicknesses(cupBase_settings[iCupBase_SubdivisionFloorThicknesses]),
+    contains_zero = len([for (v = subdivision_floor_thicknesses) if (v == 0) 1]) > 0,
+    parse_invalid = len(subdivision_floor_thicknesses) > 0
+      && len([for (v = subdivision_floor_thicknesses) if (!_is_valid_floor_thickness_value(v)) 1]) > 0)
+  cupBase_settings[iCupBase_IrregularSubdivisionFloorThickness] && !contains_zero && !parse_invalid;
+
+function _subdivision_floor_top(
+  subdivision_index,
+  floorht,
+  cupBase_settings) =
+  let(
+    floor_thickness = cupBase_settings[iCupBase_FloorThickness],
+    subdivision_floor_thicknesses = _parse_subdivision_floor_thicknesses(cupBase_settings[iCupBase_SubdivisionFloorThicknesses]),
+    subdivision_floor_thickness = _subdivision_floor_thickness_for_index(
+      subdivision_index = subdivision_index,
+      parsed_thicknesses = subdivision_floor_thicknesses,
+      fallback_thickness = floor_thickness))
+  _use_subdivision_floor_depth_overrides(cupBase_settings)
+    ? max(0, floorht + (subdivision_floor_thickness - floor_thickness))
+    : floorht;
 
 module subdivision_floor_depth_overrides(
   num_x,
@@ -1333,10 +1409,7 @@ module subdivision_floor_depth_overrides(
   x_spans = _chamber_spans_from_separators(calculated_vertical_separator_positions, inner_x);
   y_spans = _chamber_spans_from_separators(calculated_horizontal_separator_positions, inner_y);
   subdivision_floor_thicknesses = _parse_subdivision_floor_thicknesses(cupBase_settings[iCupBase_SubdivisionFloorThicknesses]);
-  contains_zero = len([for (v = subdivision_floor_thicknesses) if (v == 0) 1]) > 0;
-  parse_invalid = len(subdivision_floor_thicknesses) > 0
-    && len([for (v = subdivision_floor_thicknesses) if (!_is_valid_floor_thickness_value(v)) 1]) > 0;
-  use_irregular = cupBase_settings[iCupBase_IrregularSubdivisionFloorThickness] && !contains_zero && !parse_invalid;
+  use_irregular = _use_subdivision_floor_depth_overrides(cupBase_settings);
 
   if (use_irregular) {
     for (y_idx = [0:len(y_spans)-1]) {
@@ -1374,6 +1447,22 @@ module svg_cutout_2d(svg_cutout_settings) {
     if (crop_distance > 0)
       translate([-crop_size, -crop_size / 2])
         square([crop_size + crop_distance, crop_size]);
+  }
+}
+
+module svg_cutout_finger_holes_2d(svg_cutout_settings, x_loc, y_loc) {
+  finger_holes = svg_cutout_settings[iSvgCutout_FingerHoles];
+  x_offset = svg_cutout_settings[iSvgCutout_FingerHoleXOffset];
+  y_depth = svg_cutout_settings[iSvgCutout_FingerHoleYDepth];
+  radius = svg_cutout_settings[iSvgCutout_FingerHoleRadius];
+
+  if (finger_holes > 0 && radius > 0) {
+    translate([x_loc - x_offset, y_loc + y_depth])
+      circle(r = radius);
+
+    if (finger_holes == 2)
+      translate([x_loc + x_offset, y_loc + y_depth])
+        circle(r = radius);
   }
 }
 
@@ -1441,6 +1530,41 @@ module svg_cutout_floor_highlight(
     translate([x_loc, y_loc, z_loc - svg_cutout_settings[iSvgCutout_ExtrudeHeight]])
     linear_extrude(height = 0.25)
       svg_cutout_2d(svg_cutout_settings);
+  }
+}
+
+module svg_cutout_finger_holes(
+  num_x,
+  num_y,
+  wall_thickness,
+  floorHeight,
+  cupBase_settings,
+  svg_cutout_settings,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions) {
+
+  filename = svg_cutout_settings[iSvgCutout_Filename];
+  selected_operation = svg_cutout_settings[iSvgCutout_Operation];
+  finger_holes = svg_cutout_settings[iSvgCutout_FingerHoles];
+  radius = svg_cutout_settings[iSvgCutout_FingerHoleRadius];
+
+  if (filename != "" && selected_operation == SvgCutoutOperation_negative && finger_holes > 0 && radius > 0) {
+    first_chamber_reference = _first_chamber_reference(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
+    subdivision_floor_z = _subdivision_floor_top(
+      subdivision_index = 0,
+      floorht = floorHeight,
+      cupBase_settings = cupBase_settings);
+    hole_depth = svg_cutout_settings[iSvgCutout_ExtrudeHeight] / 2;
+
+    color(env_colour(color_wallcutout))
+    translate([0, 0, subdivision_floor_z - hole_depth - fudgeFactor])
+    linear_extrude(height = hole_depth + fudgeFactor * 2)
+      svg_cutout_finger_holes_2d(svg_cutout_settings, first_chamber_reference.x, first_chamber_reference[2]);
   }
 }
 

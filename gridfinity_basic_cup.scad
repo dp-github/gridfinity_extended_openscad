@@ -252,6 +252,14 @@ svg_cutout_z_loc = 0; //0.1
 svg_cutout_extrude_height = 20; //0.1
 // Add a 0.25mm positive color/material layer at the bottom of a negative SVG cutout.
 cutout_floor_highlight = false;
+// Number of finger holes to cut into the cutout floor.
+finger_holes = 0; //[0:1:2]
+// X offset of finger hole center from the cutout subdivision center.
+finger_hole_x_offset = 10; //1
+// Y offset/depth of finger hole center from the bottom of the cup.
+finger_hole_y_depth = 0; //1
+// Radius of each finger hole.
+finger_hole_radius = 5; //1
 // SVG extrusion mode.
 svg_cutout_operation = "negative"; //[none, positive, negative]
 
@@ -466,6 +474,10 @@ gridfinity_cup(
     loc = [svg_cutout_x_loc, svg_cutout_y_loc, svg_cutout_z_loc],
     extrudeHeight = svg_cutout_extrude_height,
     floorHighlight = cutout_floor_highlight,
+    fingerHoles = finger_holes,
+    fingerHoleXOffset = finger_hole_x_offset,
+    fingerHoleYDepth = finger_hole_y_depth,
+    fingerHoleRadius = finger_hole_radius,
     operation = svg_cutout_operation),
   wallcutout_vertical_settings = WallCutoutSettings(
     type = wallcutout_vertical,
