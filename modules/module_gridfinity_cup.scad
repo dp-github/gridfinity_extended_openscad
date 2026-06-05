@@ -161,6 +161,7 @@ default_svg_cutout_crop_distance = 0;
 default_svg_cutout_offset = 2;
 default_svg_cutout_loc = [0, 0, 0];
 default_svg_cutout_extrude_height = 20;
+default_svg_cutout_floor_highlight = false;
 default_svg_cutout_operation = "negative";
 
 /* [Wall Placard] */
@@ -334,6 +335,7 @@ module gridfinity_cup(
     offsetDistance = default_svg_cutout_offset,
     loc = default_svg_cutout_loc,
     extrudeHeight = default_svg_cutout_extrude_height,
+    floorHighlight = default_svg_cutout_floor_highlight,
     operation = default_svg_cutout_operation),
   wallcutout_vertical_settings=WallCutoutSettings(
     type = default_wallcutout_vertical, 
@@ -665,6 +667,15 @@ module gridfinity_cup(
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
       operation = SvgCutoutOperation_positive);
+
+    svg_cutout_floor_highlight(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      floorHeight = floorHeight,
+      svg_cutout_settings = svg_cutout_settings,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
 
     svg_cutout(
       num_x = num_x,
@@ -1193,6 +1204,7 @@ iSvgCutout_OffsetDistance = 3;
 iSvgCutout_Loc = 4;
 iSvgCutout_ExtrudeHeight = 5;
 iSvgCutout_Operation = 6;
+iSvgCutout_FloorHighlight = 7;
 
 SvgCutoutOperation_none = "none";
 SvgCutoutOperation_positive = "positive";
@@ -1214,7 +1226,8 @@ function SvgCutoutSettings(
   offsetDistance = 2,
   loc = [0, 0, 0],
   extrudeHeight = 20,
-  operation = SvgCutoutOperation_negative) =
+  operation = SvgCutoutOperation_negative,
+  floorHighlight = false) =
   ValidateSvgCutoutSettings([
     filename,
     is_num(scale) ? [scale, scale] : scale,
@@ -1222,11 +1235,12 @@ function SvgCutoutSettings(
     offsetDistance,
     loc,
     extrudeHeight,
-    operation
+    operation,
+    floorHighlight
   ]);
 
 function ValidateSvgCutoutSettings(settings) =
-  assert(is_list(settings) && len(settings) == 7, "SvgCutoutSettings must be a list of length 7")
+  assert(is_list(settings) && (len(settings) == 7 || len(settings) == 8), "SvgCutoutSettings must be a list of length 7 or 8")
   assert(is_string(settings[iSvgCutout_Filename]), "SvgCutoutSettings filename must be a string")
   assert(is_list(settings[iSvgCutout_Scale]) && len(settings[iSvgCutout_Scale]) == 2, "SvgCutoutSettings scale must be a list of length 2")
   assert(is_num(settings[iSvgCutout_Scale].x), "SvgCutoutSettings X scale must be a number")
@@ -1239,6 +1253,7 @@ function ValidateSvgCutoutSettings(settings) =
   assert(is_num(settings[iSvgCutout_Loc].z), "SvgCutoutSettings Z loc must be a number")
   assert(is_num(settings[iSvgCutout_ExtrudeHeight]) && settings[iSvgCutout_ExtrudeHeight] > 0, "SvgCutoutSettings extrude height must be a positive number")
   assert(is_string(settings[iSvgCutout_Operation]), "SvgCutoutSettings operation must be a string")
+  assert(len(settings) == 7 || is_bool(settings[iSvgCutout_FloorHighlight]), "SvgCutoutSettings floor highlight must be a boolean")
   [
     settings[iSvgCutout_Filename],
     settings[iSvgCutout_Scale],
@@ -1246,7 +1261,8 @@ function ValidateSvgCutoutSettings(settings) =
     settings[iSvgCutout_OffsetDistance],
     settings[iSvgCutout_Loc],
     settings[iSvgCutout_ExtrudeHeight],
-    ValidateSvgCutoutOperation(settings[iSvgCutout_Operation])
+    ValidateSvgCutoutOperation(settings[iSvgCutout_Operation]),
+    len(settings) == 7 ? false : settings[iSvgCutout_FloorHighlight]
   ];
 
 function _separator_bottom_thickness(sepCfg) =
@@ -1392,6 +1408,38 @@ module svg_cutout(
     color(env_colour(color_wallcutout))
     translate([x_loc, y_loc, z_loc - extrude_height + fudgeFactor])
     linear_extrude(height = extrude_height)
+      svg_cutout_2d(svg_cutout_settings);
+  }
+}
+
+module svg_cutout_floor_highlight(
+  num_x,
+  num_y,
+  wall_thickness,
+  floorHeight,
+  svg_cutout_settings,
+  calculated_vertical_separator_positions,
+  calculated_horizontal_separator_positions) {
+
+  filename = svg_cutout_settings[iSvgCutout_Filename];
+  selected_operation = svg_cutout_settings[iSvgCutout_Operation];
+  floor_highlight = svg_cutout_settings[iSvgCutout_FloorHighlight];
+
+  if (filename != "" && selected_operation == SvgCutoutOperation_negative && floor_highlight) {
+    loc = svg_cutout_settings[iSvgCutout_Loc];
+    first_chamber_center = _first_chamber_center(
+      num_x = num_x,
+      num_y = num_y,
+      wall_thickness = wall_thickness,
+      calculated_vertical_separator_positions = calculated_vertical_separator_positions,
+      calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
+    x_loc = loc.x == 0 ? first_chamber_center.x : loc.x;
+    y_loc = loc.y == 0 ? first_chamber_center.y : loc.y;
+    z_loc = loc.z == 0 ? floorHeight : loc.z;
+
+    color(env_colour(color_cutout_floor_highlight))
+    translate([x_loc, y_loc, z_loc - svg_cutout_settings[iSvgCutout_ExtrudeHeight]])
+    linear_extrude(height = 0.25)
       svg_cutout_2d(svg_cutout_settings);
   }
 }

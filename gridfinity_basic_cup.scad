@@ -250,6 +250,8 @@ svg_cutout_y_loc = 0; //0.1
 svg_cutout_z_loc = 0; //0.1
 // Extrude height for the imported SVG cutout.
 svg_cutout_extrude_height = 20; //0.1
+// Add a 0.25mm positive color/material layer at the bottom of a negative SVG cutout.
+cutout_floor_highlight = false;
 // SVG extrusion mode.
 svg_cutout_operation = "negative"; //[none, positive, negative]
 
@@ -463,6 +465,7 @@ gridfinity_cup(
     offsetDistance = svg_cutout_offset,
     loc = [svg_cutout_x_loc, svg_cutout_y_loc, svg_cutout_z_loc],
     extrudeHeight = svg_cutout_extrude_height,
+    floorHighlight = cutout_floor_highlight,
     operation = svg_cutout_operation),
   wallcutout_vertical_settings = WallCutoutSettings(
     type = wallcutout_vertical,
