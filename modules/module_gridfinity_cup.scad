@@ -564,6 +564,7 @@ module gridfinity_cup(
             num_y = num_y,
             wall_thickness = wall_thickness,
             floorHeight = floorHeight,
+            cupBase_settings = cupBase_settings,
             svg_cutout_settings = svg_cutout_settings,
             calculated_vertical_separator_positions = calculated_vertical_separator_positions,
             calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
@@ -685,6 +686,7 @@ module gridfinity_cup(
       num_y = num_y,
       wall_thickness = wall_thickness,
       floorHeight = floorHeight,
+      cupBase_settings = cupBase_settings,
       svg_cutout_settings = svg_cutout_settings,
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
@@ -695,6 +697,7 @@ module gridfinity_cup(
       num_y = num_y,
       wall_thickness = wall_thickness,
       floorHeight = floorHeight,
+      cupBase_settings = cupBase_settings,
       svg_cutout_settings = svg_cutout_settings,
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
@@ -704,6 +707,7 @@ module gridfinity_cup(
       num_y = num_y,
       wall_thickness = wall_thickness,
       floorHeight = floorHeight,
+      cupBase_settings = cupBase_settings,
       svg_cutout_settings = svg_cutout_settings,
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
@@ -1506,6 +1510,7 @@ module svg_cutout(
   num_y,
   wall_thickness,
   floorHeight,
+  cupBase_settings,
   svg_cutout_settings,
   calculated_vertical_separator_positions,
   calculated_horizontal_separator_positions,
@@ -1522,9 +1527,13 @@ module svg_cutout(
       wall_thickness = wall_thickness,
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
+    subdivision_floor_z = _subdivision_floor_top(
+      subdivision_index = 0,
+      floorht = floorHeight,
+      cupBase_settings = cupBase_settings);
     x_loc = loc.x == 0 ? first_chamber_center.x : loc.x;
     y_loc = loc.y == 0 ? first_chamber_center.y : loc.y;
-    z_loc = loc.z == 0 ? floorHeight : loc.z;
+    z_loc = loc.z == 0 ? subdivision_floor_z : loc.z;
     extrude_height = selected_operation == SvgCutoutOperation_none
       ? fudgeFactor
       : svg_cutout_settings[iSvgCutout_ExtrudeHeight] + fudgeFactor * 2;
@@ -1541,6 +1550,7 @@ module svg_cutout_floor_highlight(
   num_y,
   wall_thickness,
   floorHeight,
+  cupBase_settings,
   svg_cutout_settings,
   calculated_vertical_separator_positions,
   calculated_horizontal_separator_positions) {
@@ -1557,9 +1567,13 @@ module svg_cutout_floor_highlight(
       wall_thickness = wall_thickness,
       calculated_vertical_separator_positions = calculated_vertical_separator_positions,
       calculated_horizontal_separator_positions = calculated_horizontal_separator_positions);
+    subdivision_floor_z = _subdivision_floor_top(
+      subdivision_index = 0,
+      floorht = floorHeight,
+      cupBase_settings = cupBase_settings);
     x_loc = loc.x == 0 ? first_chamber_center.x : loc.x;
     y_loc = loc.y == 0 ? first_chamber_center.y : loc.y;
-    z_loc = loc.z == 0 ? floorHeight : loc.z;
+    z_loc = loc.z == 0 ? subdivision_floor_z : loc.z;
 
     color(env_colour(color_cutout_floor_highlight))
     translate([x_loc, y_loc, z_loc - svg_cutout_settings[iSvgCutout_ExtrudeHeight]])

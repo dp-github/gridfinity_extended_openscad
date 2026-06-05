@@ -248,8 +248,8 @@ svg_cutout_x_loc = 0; //0.1
 svg_cutout_y_loc = 0; //0.1
 // Z location. 0 uses the floor height of the left chamber.
 svg_cutout_z_loc = 0; //0.1
-// Extrude height for the imported SVG cutout.
-svg_cutout_extrude_height = 20; //0.1
+// Depth of the imported SVG cutout.
+cutout_depth = 20; //0.1
 // SVG extrusion mode.
 svg_cutout_operation = "negative"; //[none, positive, negative]
 // Add a 0.25mm positive color/material layer at the bottom of a negative SVG cutout.
@@ -476,7 +476,7 @@ gridfinity_cup(
     cropDistance = svg_cutout_crop_distance,
     offsetDistance = svg_cutout_offset,
     loc = [svg_cutout_x_loc, svg_cutout_y_loc, svg_cutout_z_loc],
-    extrudeHeight = svg_cutout_extrude_height,
+    extrudeHeight = cutout_depth,
     floorHighlight = cutout_floor_highlight,
     fingerHoles = finger_holes,
     fingerHoleXOffset = finger_hole_x_offset,

@@ -86,5 +86,4 @@ color_base = "DimGray";
 color_extension = "lightpink";
 color_text = "Yellow"; //Gold
 color_cut = "Black";
-color_cutout_floor_highlight = "Gold";
 color_lid = "MediumAquamarine";
