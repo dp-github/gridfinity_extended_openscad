@@ -91,6 +91,7 @@ default_horizontal_separator_bend_position = 0; //0.1
 default_horizontal_separator_bend_angle = 45; //0.1
 default_horizontal_separator_bend_separation = 0; //0.1
 default_horizontal_separator_cut_depth = 0;//0.1
+default_horizontal_subdivision_width = 0;
 // Enable irregular subdivisions
 default_vertical_irregular_subdivisions = false;
 // Separator positions are defined in terms of grid units from the left end
@@ -293,6 +294,8 @@ module gridfinity_cup(
     separator_cut_depth = default_horizontal_separator_cut_depth,
     irregular_subdivisions = default_horizontal_irregular_subdivisions,
     separator_config = default_horizontal_separator_config),
+  // Width in mm of horizontal subdivisions, measured from the left side. 0 uses the full cup width.
+  horizontal_subdivision_width = default_horizontal_subdivision_width,
   lip_settings = LipSettings(
     lipStyle=default_lip_style, 
     lipSideReliefTrigger=default_lip_side_relief_trigger, 
@@ -442,7 +445,9 @@ module gridfinity_cup(
     separator_config = horizontal_chambers[iChamber_irregular_subdivisions] 
       ? horizontal_chambers[iChamber_separator_config] 
       : splitChamber(horizontal_chambers[iChamber_count]-1, divider_width=horizontal_chambers[iChamber_wall_thickness].x, container_width=num_y*env_pitch().y - env_clearance().y - wall_thickness*2), 
-    length = env_pitch().x*num_x,
+    length = horizontal_subdivision_width <= 0
+      ? env_pitch().x*num_x
+      : min(horizontal_subdivision_width, env_pitch().x*num_x),
     height = env_pitch().z*(num_z)-sepFloorHeight+fudgeFactor*2-max(headroom, horizontal_chambers[iChamber_wall_headroom]),
     wall_thickness = horizontal_chambers[iChamber_wall_thickness],
     wall_top_radius = horizontal_chambers[iChamber_wall_top_radius],
@@ -531,6 +536,7 @@ module gridfinity_cup(
             wall_thickness=wall_thickness,
             calculated_vertical_separator_positions = calculated_vertical_separator_positions,
             calculated_horizontal_separator_positions = calculated_horizontal_separator_positions,
+            horizontal_subdivision_width = horizontal_subdivision_width,
             lip_settings=lip_settings,
             headroom=headroom,
             sliding_lid_settings= slidingLidSettings);
@@ -1634,6 +1640,7 @@ module partitioned_cavity(num_x, num_y, num_z,
     wall_thickness=0,
     calculated_vertical_separator_positions=calculated_vertical_separator_positions,
     calculated_horizontal_separator_positions=calculated_horizontal_separator_positions,
+    horizontal_subdivision_width=0,
     lip_settings=[], 
     headroom=default_headroom, 
     sliding_lid_settings=[]) {
@@ -1695,7 +1702,10 @@ module partitioned_cavity(num_x, num_y, num_z,
     if(env_help_enabled("trace")) echo("partitioned_cavity", horizontal_separator_positions=calculated_horizontal_separator_positions);
     
     color(env_colour(color_divider))
-    translate([env_pitch().x*num_x, wall_thickness+env_clearance().y/2, sepFloorHeight-fudgeFactor])
+    translate([horizontal_subdivision_width <= 0
+        ? env_pitch().x*num_x
+        : min(horizontal_subdivision_width, env_pitch().x*num_x),
+      wall_thickness+env_clearance().y/2, sepFloorHeight-fudgeFactor])
     separators(
       calculatedSeparators = calculated_horizontal_separator_positions, 
       separator_orientation = "horizontal",

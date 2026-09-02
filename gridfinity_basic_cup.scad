@@ -69,6 +69,8 @@ vertical_separator_config = "10.5|21|42|50|60";
 horizontal_irregular_subdivisions = false;
 // Separator positions are defined in terms of grid units from the left end
 horizontal_separator_config = "10.5|21|42|50|60";
+// Width in mm of horizontal subdivisions, measured from the left side. 0 uses the full cup width.
+horizontal_subdivision_width = 0; //0.1
 
 /* [Base] */
 // Enable magnets
@@ -425,6 +427,7 @@ gridfinity_cup(
     separator_cut_depth = horizontal_separator_cut_depth,
     irregular_subdivisions = horizontal_irregular_subdivisions,
     separator_config = horizontal_separator_config),
+  horizontal_subdivision_width = horizontal_subdivision_width,
   lip_settings = LipSettings(
     lipStyle=lip_style,
     lipSideReliefTrigger=lip_side_relief_trigger,
